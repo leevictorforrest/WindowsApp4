@@ -1,37 +1,190 @@
-﻿Imports System.IO
+﻿Imports System.Drawing.Drawing2D
+Imports System.Drawing.Imaging
+Imports System.IO
 Imports System.Net
+Imports System.Runtime.InteropServices
 
 Public Class Form1
     Public linkreceived As Boolean
     Public x1, x2, y1, y2 As Integer
     Public cnt1, cnt2 As Integer
     Public ctadd As Long
-    Public screencords(1024) As Integer
+    Public screencordsx(1024) As Integer
+    Public screencordsy(1024) As Integer
+    Public screencordsx1(1024) As Integer
+    Public screencordsy1(1024) As Integer
     Public sx1(1024) As Integer
     Public sx2(1024) As Integer
     Public sy1(1024) As Integer
     Public sy2(1024) As Integer
     Public hyplink(1024) As String
     Public msx, msy As Long
+    Public patho As String
+    Public ccc As Long
+    Public onelongx, onelongy As Long
+    Public sumofpics As Long
+    Public pic(1000) As PictureBox
+    Public hyperlnk(1000) As String
+    public hyperlnknum as long
 
+    Public Class testmouseclass
+
+        <DllImport("user32.dll", CharSet:=CharSet.Auto, ExactSpelling:=True)> Public Shared Function GetAsyncKeyState(ByVal vkey As Long) As Long
+
+        End Function
+
+
+        Public Shared Function LeftMouseIsDown() As Boolean
+            try
+                'Return GetAsyncKeyState(Keys.LButton) > 0 And &H8000
+            Catch ex As Exception
+
+            End Try
+            if keys.LButton=true then
+                LeftMouseIsDown=true
+                MsgBox("pressed")
+            End If
+           return LeftMouseIsDown
+
+        End Function
+
+    End Class
 
     Private Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click
-
+        Timer1.Enabled = False
         GetAlbumInfo()
 
         ' "C:\vb\vupics\Ftorrents100 Greatest Classic Rock Songs (2019)001.  Van Halen  -  Jump (2015 Remaster).mp3\1.jpg"
 
     End Sub
 
+    Public Structure POINTAPI
+        Dim x As Long
+        Dim y As Long
+    End Structure
+
+
     Private Sub Timer1_Tick(sender As Object, e As EventArgs) Handles Timer1.Tick
         Timer1.Enabled = False
-        For x = 0 To ctadd
-            If sx1(x) <= msx And sy1(x) <= msy And sx2(x) >= msx And sy2(x) >= msy Then
-                MsgBox(Str(x))
+        Dim cur_x As Single
+        Dim cur_y As Single
+
+        cur_x = GetMousePoint.x
+        cur_y = GetMousePoint.y
+        'me.TextBox3.text  = cur_x & "   " & cur_y
+
+
+        Timer1.Enabled = True
+    End Sub
+    Public Function GetMousePoint() As POINTAPI
+
+
+
+
+        Dim fx = Me.Width
+        Dim fy = Me.Height
+        Dim plx As Long
+        Dim ply As Long
+        Dim sp As Integer
+        Dim mmmc As Boolean
+        Dim num As Integer
+        For g = 1 To ctadd - 1
+            Dim x As Long = Cursor.Position.X
+            Dim y As Long = Cursor.Position.Y
+
+           
+            fx = pic(g).Left
+            fy = pic(g).Top
+            plx = pic(g).Right
+            ply = pic(g).Bottom
+            If x >= fx And x <= plx And y >= fy And y <= ply Then
+                sp = g
+                GoTo jp
             End If
         Next
+        GoTo joppa
+jp:
+        Try
+         
+            Dim newImage As Image = pic(sp).Image
+            hyperlnknum=sp
+            Dim strea As New MemoryStream
+            newImage.Save(strea, ImageFormat.Png)
+            strea.Position = 0
+            Dim gi As Image = Image.FromStream(strea)
+            Dim g1111 As Graphics
+            g1111 = Graphics.FromHwnd(Form2.Handle)
+            Dim iw, ih As Long
+            iw = newImage.Width
+            ih = newImage.Height
+            TextBox2.Text = Str(fx) + " " + Str(fy) + " " + Str(sp)
+            'dim pb as new PictureBox 
+            'pb.image=newimage
+            Dim point As Point = pic(sp).PointToClient(Control.MousePosition)
+            g1111.SmoothingMode = SmoothingMode.AntiAlias
+            g1111.Clear(Color.White)
+            For c = 1 To 8
+                For a = 1 To 360 Step Math.PI * 96
+                    Dim x1 As Double = c * Math.Cos(Math.PI * a / 180.0) + point.X
 
-    End Sub
+
+
+                    Dim y1 As Double = c * Math.Sin(Math.PI * a / 180.0) + point.Y
+
+                    g1111.DrawImage(gi, CInt(x1), CInt(y1), Form2.Width - iw, Form2.Height - ih)
+
+
+                Next a
+
+            Next c
+            g1111.DrawImage(newImage, CInt(x1), CInt(y1), x1 + Form2.Width - iw, y1 + Form2.Height - ih)
+          
+
+
+
+
+        Catch ex As Exception
+
+        End Try
+
+
+joppa:
+
+
+
+
+
+
+
+
+    End Function
+
+    Private Function FindPointOnCircle(originPoint As Point, radius As Double, angleDegrees As Double) As Point
+
+
+
+
+        Dim x As Double = radius * Math.Cos(Math.PI * angleDegrees / 180.0) + originPoint.X
+
+
+
+        Dim y As Double = radius * Math.Sin(Math.PI * angleDegrees / 180.0) + originPoint.Y
+
+
+
+
+
+
+
+
+        Return New Point(x, y)
+
+
+
+
+    End Function
+
+
 
     Public Sub dispic()
         Dim _picCollection As New PictureBox.ControlAccessibleObject(Me)
@@ -64,14 +217,15 @@ Public Class Form1
         Next
     End Sub
     Private Sub GetAlbumInfo()
-        For xx = 1 To ctadd
+        For xx = 0 To ctadd
             For Each cControl As Control In Me.Controls
 
 
 
                 If cControl.Name = "" Then
                     Me.Controls.Remove(cControl)
-                    screencords(xx) = 0
+                    screencordsx(xx) = 0
+                    screencordsx(xx) = 0
                     sx1(xx) = 0
                     sx2(xx) = 0
                     sy1(xx) = 0
@@ -94,178 +248,114 @@ Public Class Form1
         Dim zArtist As String = TextBox1.Text
         Dim zTrackTitle As String = TextBox2.Text
         Dim zAlbum As String = TextBox1.Text
+        Me.WindowState = FormWindowState.Maximized
+
+        Form2.Show
+
         'MsgBox(zArtist + vbLf + zTrackTitle + vbLf + zAlbum)
-        Try
-            'no base exists
-
-            Dim ss As String = "&source=lnms&tbm=isch&sa=X&ved=0ahUKEwjMyLvVv6XiAhV1sXEKHV1LCD8Q_AUIDygC&biw=1202&bih=493"
-            Dim bak As String = "&source=lnms&tbm=isch&sa=X&ved=0ahUKEwjG0s6j6qDiAhXfThUIHVXBCTUQ_AUIDigB&biw=1280&bih=551"
-
-            Dim mainUrl As String = "https://www.google.co.uk/search?q=" + zArtist + "+" + zTrackTitle + Me.Width.ToString + "x" + Me.Height.ToString + ss
-            'https://www.google.co.uk/search?q=michael+jackson+cover+art&source=lnms&tbm=isch&sa=X&ved=0ahUKEwjG0s6j6qDiAhXfThUIHVXBCTUQ_AUIDigB&biw=1280&bih=551
-            'https://www.google.co.uk/search?q=michael+jackson+cover+art&source=lnms&tbm=isch&sa=X&ved=0ahUKEwjG0s6j6qDiAhXfThUIHVXBCTUQ_AUIDigB&biw=1280&bih=551
-            'https://www.google.co.uk/search?q=michael+jackson+beat+it&source=lnms&tbm=isch&sa=X&ved=0ahUKEwjMyLvVv6XiAhV1sXEKHV1LCD8Q_AUIDygC&biw=1202&bih=493
-
-            'Dim doc As HtmlAgilityPack.HtmlDocument
-            Dim doc = New HtmlAgilityPack.HtmlDocument()
-            Dim nod As HtmlAgilityPack.HtmlNode
-            Dim wc As New WebClient()
-            Dim sourcestring As String
-            Dim request = CType(WebRequest.Create(mainUrl), HttpWebRequest)
-            'Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; AS; rv:11.0)
-
-            request.UserAgent = "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; .NET CLR 1.0.3705;)"
-            '"Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; .NET CLR 1.0.3705;)
-            '"•Links (0.96; CYGWIN_NT-5.0 1.3.22(0.78/3/2) i686)
-            request.Headers.Add(HttpRequestHeader.AcceptEncoding, "gzip,deflate")
-            request.AutomaticDecompression = DecompressionMethods.GZip Or DecompressionMethods.Deflate
-            'Dim responseText As String
-            ' Dim response = request.GetResponse()
-
-            Try
-                Using response As WebResponse = request.GetResponse()
-                    Using responsestream As Stream = response.GetResponseStream()
-                        Using reader As StreamReader = New StreamReader(responsestream)
-                            Dim webresponse As String
-                            webresponse = reader.ReadToEnd()
-                            sourcestring = webresponse
-                            Application.DoEvents()
-                        End Using
-                    End Using
-                End Using
-            Catch ex As Exception
-
-            End Try
-            'Using response As WebResponse = request.GetResponseasync()
+        For Each dr In My.Computer.FileSystem.GetDirectories("c:\vb\vupics\", FileIO.SearchOption.SearchAllSubDirectories)
+            Dim fnb As Long = 0
+            For Each fil In My.Computer.FileSystem.GetFiles(dr, FileIO.SearchOption.SearchAllSubDirectories, "*.jpg")
 
 
-            ' MsgBox(sourcestring)
+                ctadd = ctadd + 1
+                fnb = fnb + 1
+                Dim tf As String = IO.File.ReadAllText(dr + "\" + Trim(Str(fnb)) + ".txt")
+                Dim im As New PictureBox
 
-            ' does not unpack the contents then if source string = gzip
+                If ctadd > 120 Then GoTo exxxt
 
-            'Dim sourceString1 As String = New System.Net.WebClient().DownloadString(mainUrl)
-            'MsgBox(sourceString1)
 
-            '= wc.DownloadString(mainUrl)
-            Dim sourcestrin1 As String = sourcestring
-            If sourcestring = "" Then GoTo thisjmp
-            doc.LoadHtml(sourcestring)
-            Dim st As String = TextBox1.Text
-            Dim newString As String = st.Replace(vbCr, "").Replace(vbLf, "")
-            st = newString
-            Dim pth As String = st
-            Dim s() As String = Split(pth, "\")
-            Dim n As Long
 
-            pth = ""
-            For Each itm In s
-                pth = pth + itm
-            Next
-            Dim s1() As String = Split(pth, ":")
-            pth = ""
-            For Each colon In s1
-                pth = pth + colon
-            Next
-            pth = pth + TextBox1.Text + TextBox2.Text
-            Dim cct As Long
-            If Not IO.Directory.Exists("c:\vb\vupics\" + pth) Then
-                IO.Directory.CreateDirectory("c:\vb\vupics\" + pth)
-            End If
+                pic(ctadd) = New PictureBox
+                pic(ctadd).SizeMode = PictureBoxSizeMode.Zoom
+                pic(ctadd).ImageLocation = tf
 
-            For Each itm In IO.Directory.GetFiles("c:\vb\vupics\" + pth + "\", "*.*", searchOption:=SearchOption.TopDirectoryOnly)
-                cct = cct + 1
-            Next
-            If cct > 1 Then
-                'GoTo jmp2
-            End If
-            Dim ccnt As Long
+                sx1(ctadd) = x1
+                sx2(ctadd) = pic(ctadd).Width
+                sy1(ctadd) = y1
+                sy2(ctadd) = pic(ctadd).Height
 
-scanimages:
-            Try
-                ccnt = ccnt + 1
-                If ccnt > 2 Then
-                    GoTo exxxxt
+                Dim rnd As New Random
+                pic(ctadd).Location = New Point(x1, y1)
+
+                im.ImageLocation = tf
+                im.Location = New Point(x1, y1)
+                Me.Controls.Add(im)
+
+                'pic(ctadd).Size = New Size(sx2(ctadd), sy2(ctadd))
+                pic(ctadd).BackColor = Color.Transparent
+                pic(ctadd).Visible = True
+
+
+
+                sumofpics = sumofpics + x1 + pic(ctadd).Width / y1 + pic(ctadd).Height
+
+
+                'pic(ctadd).SizeMode=
+
+                hyplink(ctadd) = tf
+                hyperlnk(ctadd) = tf
+
+
+                Me.Controls.Add(pic(ctadd))
+
+                AddHandler pic(ctadd).MouseMove, AddressOf GetMousePoint
+                AddHandler pic(ctadd).MouseClick, AddressOf GetMousePoint
+
+                Dim blackPen As New Pen(Color.Black, 2)
+                Dim myGraphics As Graphics
+
+                myGraphics = Graphics.FromHwnd(Me.Handle)
+
+
+                ' Create rectangle. 
+                Dim rect As New Rectangle(x1, y1, x1 + pic(ctadd).Width, y1 + pic(ctadd).Height)
+                Dim rect2 As New Rectangle(sx1(ctadd), sy1(ctadd), sx2(ctadd), sy2(ctadd))
+
+
+                ' Draw rectangle to screen.
+                myGraphics.DrawRectangle(blackPen, rect2)
+
+                pic(ctadd).BringToFront()
+
+                Cursor.Position = New Point(x1, y1)
+                screencordsx(ctadd) = pic(ctadd).Location.X
+                screencordsy(ctadd) = pic(ctadd).Location.Y
+                screencordsx1(ctadd) = pic(ctadd).Width
+                screencordsy1(ctadd) = pic(ctadd).Height
+
+                Dim rect3 As New Rectangle(screencordsx(ctadd), screencordsy(ctadd), screencordsx1(ctadd), screencordsy1(ctadd))
+
+                Dim blackPen2 As New Pen(Color.Black, 8)
+
+
+                myGraphics.DrawRectangle(blackPen2, rect3)
+                x1 = x1 + pic(ctadd).Width
+
+                If x1 > Me.Width - pic(ctadd).Width Then
+                    x1 = 1
+                    y1 = y1 + pic(ctadd).Height
                 End If
-                For Each link As HtmlAgilityPack.HtmlNode In doc.DocumentNode.SelectNodes("//img[@src]")
-                    linkreceived = True
-                    Application.DoEvents()
-
-                    Dim linkAddress = GetAbsoluteUrl(link.Attributes("src").Value, mainUrl)
-                    If linkreceived = False Then GoTo jmp
-
-                    'Console.WriteLine("Image: {0}", linkAddress)
-                    n = n + 1
-chk:
-
-                    If IO.File.Exists("c:\vb\vupics\" + pth + "\" + Trim(Str(n)) + ".jpg") Then
-                        '''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
-                        '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-                        n = n + 1
-                        GoTo chk
-                    End If
-                    Application.DoEvents()
-                    'Label1.Text = "Downloading Images " + linkAddress.ToString
-                    'Label1.Show()
-                    My.Computer.Network.DownloadFile(linkAddress, "c:\vb\vupics\" + pth + "\" + Trim(Str(n) + ".jpg"))
-                    If IO.File.Exists("c:\vb\vupics\" + pth + "\" + Trim(Str(n)) + ".jpg") Then
-                        ctadd = ctadd + 1
-                        Dim pic As New PictureBox
-                        pic.ImageLocation = "c:\vb\vupics\" + pth + "\" + Trim(Str(n)) + ".jpg"
-                        Dim rnd As New Random
-                        pic.Location = New Point(x1, y1)
-                        pic.Size = New Size(pic.Width * 2, pic.Height * 2)
-                        pic.BackColor = Color.Transparent
-                        pic.Visible = True
-                        pic.BringToFront()
-                        screencords(ctadd) = ctadd
-                        sx1(ctadd) = x1
-                        sx2(ctadd) = x1 + pic.Width * 2
-                        sy1(ctadd) = y1
-                        sy2(ctadd) = y1 + pic.Height * 2
 
 
-                        pic.SizeMode = PictureBoxSizeMode.Zoom
-                        hyplink(ctadd) = linkAddress
-                        Me.Controls.Add(pic)
-                        x1 = x1 + pic.Width
-                        If x1 > Me.Width - pic.Width Then
-                            x1 = 1
-                            y1 = y1 + pic.Height
-                        End If
+                Application.DoEvents()
+
+
+            Next
+        Next
+exxxt:
 
 
 
-
-
-                        Application.DoEvents()
-                    End If
-jmp:
-
-
-                Next
-            Catch ex As Exception
-                GoTo scanimages
-            End Try
-
-
-jmp2:
-
-
-
-            'MessageBox.Show(String.Format("Album Art not found for Artist: {0} / Album: {1}", artistName, albumName))
-
-thisjmp:
-
-
-        Catch ex As Exception
-            'MsgBox(ex.ToString)
-
-
-        End Try
-exxxxt:
-
+        Timer1.Enabled = True
+        Form2.Show
     End Sub
+
+    Private Sub Panel1_MouseHover(ByVal sender As Object, ByVal e As System.EventArgs)
+    End Sub
+
+
     Function GetAbsoluteUrl(partialUrl As String, baseUrl As String)
         Try
 
@@ -288,8 +378,20 @@ exxxxt:
     End Sub
 
     Private Sub Form1_MouseMove(sender As Object, e As MouseEventArgs) Handles Me.MouseMove
+
         msx = e.X
         msy = e.Y
+        onelongx = sumofpics - (msx / 120)
+        onelongy = sumofpics - (msy / 120)
 
+        TextBox3.Text = ""
+        TextBox1.Text = Str(onelongx) + " " + Str(onelongy)
+        TextBox2.Text = Str(msx) + " " + Str(msy) + " dif " + Str(onelongx - msx) + " " + Str(onelongy - msy)
+        Timer1.Enabled = True
+
+    End Sub
+
+    Private Sub Form1_MouseClick(sender As Object, e As MouseEventArgs) Handles Me.MouseClick
+        Process.Start(me.hyperlnk(me.hyperlnknum))
     End Sub
 End Class
